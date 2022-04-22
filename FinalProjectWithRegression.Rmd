@@ -1,0 +1,138 @@
+---
+title: "FinalProject"
+author: "Group 3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tigerstats)
+library(readr)
+```
+
+## Section 1 - Loading the data and Exploring the data
+
+We have selected Bike dataset to perform exploration of the data. We start by loading the data into the R Markdown file
+
+```{r}
+bike_data <- read_csv("Cleaned_bike_data.csv",show_col_types = FALSE)
+```
+
+
+```{r}
+summary(bike_data)
+```
+
+We can see that there are different columns in the table which are Model_name, Model_year, Kms_driven, Owner, Location, Mileage, Power and Price.
+
+To determine the different types of the datatypes, we can use the str command in R. This command tells us the different types of data which is present in the datasheet.
+```{r}
+str(bike_data)
+```
+
+The different types of datatypes which are present in the dataset are numeric and charachter.  
+
+To determine the null values in the table, we can use the built in method in R. 
+
+```{r}
+null_values <- sum(is.na(bike_data)) 
+null_values
+```
+
+With the above method, we can see that there are 0 missing/Null values in the dataset.
+
+## Part 2 - Graphical Overview
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+```
+
+## Part 3 - Hypothesis Testing
+
+This section is for hypothesis testing
+
+## Part 4 - Linear Regression
+
+
+
+Including the necessary packages for regression
+```{r}
+library(MASS)
+library(MLmetrics)
+```
+
+Setting the seed to store the data and keep it same.
+
+```{r}
+set.seed(101)
+```
+
+Splitting the Dataset into Training and Testing Dataset randomly. We have splitted the data in 70% and 30%.
+
+```{r}
+i = sample(2, nrow(bike_data), replace=TRUE, prob=c(0.7, 0.3))
+bikeTraining <- bike_data[i==1,]
+bikeTesting <- bike_data[i==2,]
+```
+The Training Dataset consists of 3554 entries and the Testing dataset consists of 1508 entries. 
+
+# Model 1 - Forward Propogation Model.
+
+We start with constructing the intercept model. The intercept is used to form a linear regression model with a constant variable. The full model is used to select all the attributes which are seen in the data table. We then use the stepAIC function to travel step by step and select all the elements with the highest AIC until the occurrence of the null variable. 
+
+```{r}
+intercept_model <- lm(price ~ 1, data = bikeTraining[,1:8])
+full_model <- lm(price ~ .-model_name, data = bikeTraining[,1:8])
+forward_model <- stepAIC(intercept_model, direction = "forward",scope = formula(full_model))
+```
+
+As we can see that the full model is constructed without the use of the model name. The reason for not including the model name is that it is not revelant to the price. 
+
+
+```{r}
+summary(forward_model)
+forward_model$anova
+```
+
+### We can calculate the MAE and MSE for both the backward model as follows:
+
+```{r}
+forward_pred <-predict(object = forward_model, newdata = bikeTesting[,1:8])
+MAE(y_pred = forward_pred, y_true = bikeTesting$price)
+MSE(y_pred = forward_pred, y_true = bikeTesting$price)
+```
+
+### Plotting the Forward Propogation Model
+
+```{r}
+par(mfrow=c(2,2))
+plot(forward_model)
+```
+
+# Model 2 - Backward Propogation
+
+```{r}
+backward <- stepAIC(full_model, direction = "backward")
+summary(backward)
+```
+
+> We see that the accuracy of the backward model is similar to that of the forward model. 
+
+### Calculation of the MAE and MSE for the backward model 
+
+```{r}
+backward_pred <-predict(object = backward, newdata = bikeTesting[,1:8])
+MAE(y_pred = backward_pred, y_true = bikeTesting$price)
+MSE(y_pred = backward_pred, y_true = bikeTesting$price)
+```
+
+### Plotting the Backward Propogation model 
+
+```{r}
+par(mfrow = c(2,2))
+plot(backward)
+```
+
+
+> We can see that both the models have the same accuracy and same mean square error and Mean absolute error. The accuracy for both the models is 77.02%.
